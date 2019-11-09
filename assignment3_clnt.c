@@ -9,75 +9,75 @@
 /* Default timeout can be changed using clnt_control() */
 static struct timeval TIMEOUT = { 25, 0 };
 
-char *
+serverResponse *
 get_date_and_time_1(void *argp, CLIENT *clnt)
 {
-	static char clnt_res;
+	static serverResponse clnt_res;
 
 	memset((char *)&clnt_res, 0, sizeof(clnt_res));
 	if (clnt_call (clnt, get_date_and_time,
 		(xdrproc_t) xdr_void, (caddr_t) argp,
-		(xdrproc_t) xdr_char, (caddr_t) &clnt_res,
+		(xdrproc_t) xdr_serverResponse, (caddr_t) &clnt_res,
 		TIMEOUT) != RPC_SUCCESS) {
 		return (NULL);
 	}
 	return (&clnt_res);
 }
 
-char *
-sort_list_integers_1(char *argp, CLIENT *clnt)
+serverResponse *
+sort_list_integers_1(serverResponse *argp, CLIENT *clnt)
 {
-	static char clnt_res;
+	static serverResponse clnt_res;
 
 	memset((char *)&clnt_res, 0, sizeof(clnt_res));
 	if (clnt_call (clnt, sort_list_integers,
-		(xdrproc_t) xdr_char, (caddr_t) argp,
-		(xdrproc_t) xdr_char, (caddr_t) &clnt_res,
+		(xdrproc_t) xdr_serverResponse, (caddr_t) argp,
+		(xdrproc_t) xdr_serverResponse, (caddr_t) &clnt_res,
 		TIMEOUT) != RPC_SUCCESS) {
 		return (NULL);
 	}
 	return (&clnt_res);
 }
 
-char *
+serverResponse *
 list_of_files_current_folder_1(void *argp, CLIENT *clnt)
 {
-	static char clnt_res;
+	static serverResponse clnt_res;
 
 	memset((char *)&clnt_res, 0, sizeof(clnt_res));
 	if (clnt_call (clnt, list_of_files_current_folder,
 		(xdrproc_t) xdr_void, (caddr_t) argp,
-		(xdrproc_t) xdr_char, (caddr_t) &clnt_res,
+		(xdrproc_t) xdr_serverResponse, (caddr_t) &clnt_res,
 		TIMEOUT) != RPC_SUCCESS) {
 		return (NULL);
 	}
 	return (&clnt_res);
 }
 
-char *
-matrix_multiply_1(char *argp, CLIENT *clnt)
+serverResponse *
+matrix_multiply_1(inputMatrixes *argp, CLIENT *clnt)
 {
-	static char clnt_res;
+	static serverResponse clnt_res;
 
 	memset((char *)&clnt_res, 0, sizeof(clnt_res));
 	if (clnt_call (clnt, matrix_multiply,
-		(xdrproc_t) xdr_char, (caddr_t) argp,
-		(xdrproc_t) xdr_char, (caddr_t) &clnt_res,
+		(xdrproc_t) xdr_inputMatrixes, (caddr_t) argp,
+		(xdrproc_t) xdr_serverResponse, (caddr_t) &clnt_res,
 		TIMEOUT) != RPC_SUCCESS) {
 		return (NULL);
 	}
 	return (&clnt_res);
 }
 
-char *
-reverse_encryption_1(char *argp, CLIENT *clnt)
+serverResponse *
+reverse_encryption_1(serverResponse *argp, CLIENT *clnt)
 {
-	static char clnt_res;
+	static serverResponse clnt_res;
 
 	memset((char *)&clnt_res, 0, sizeof(clnt_res));
 	if (clnt_call (clnt, reverse_encryption,
-		(xdrproc_t) xdr_char, (caddr_t) argp,
-		(xdrproc_t) xdr_char, (caddr_t) &clnt_res,
+		(xdrproc_t) xdr_serverResponse, (caddr_t) argp,
+		(xdrproc_t) xdr_serverResponse, (caddr_t) &clnt_res,
 		TIMEOUT) != RPC_SUCCESS) {
 		return (NULL);
 	}

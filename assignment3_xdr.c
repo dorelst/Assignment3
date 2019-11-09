@@ -4,3 +4,25 @@
  */
 
 #include "assignment3.h"
+
+bool_t
+xdr_serverResponse (XDR *xdrs, serverResponse *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_string (xdrs, &objp->responseContent, 2000))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_inputMatrixes (XDR *xdrs, inputMatrixes *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_string (xdrs, &objp->matrix1, 2000))
+		 return FALSE;
+	 if (!xdr_string (xdrs, &objp->matrix2, 2000))
+		 return FALSE;
+	return TRUE;
+}

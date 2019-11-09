@@ -14,44 +14,67 @@ extern "C" {
 #endif
 
 
+struct serverResponse {
+	char *responseContent;
+};
+typedef struct serverResponse serverResponse;
+
+struct inputMatrixes {
+	char *matrix1;
+	char *matrix2;
+};
+typedef struct inputMatrixes inputMatrixes;
+
 #define ASSIGNMENT3 0x31234567
 #define ASSIGNMENT3_VERS 1
 
 #if defined(__STDC__) || defined(__cplusplus)
 #define get_date_and_time 1
-extern  char * get_date_and_time_1(void *, CLIENT *);
-extern  char * get_date_and_time_1_svc(void *, struct svc_req *);
+extern  serverResponse * get_date_and_time_1(void *, CLIENT *);
+extern  serverResponse * get_date_and_time_1_svc(void *, struct svc_req *);
 #define sort_list_integers 2
-extern  char * sort_list_integers_1(char *, CLIENT *);
-extern  char * sort_list_integers_1_svc(char *, struct svc_req *);
+extern  serverResponse * sort_list_integers_1(serverResponse *, CLIENT *);
+extern  serverResponse * sort_list_integers_1_svc(serverResponse *, struct svc_req *);
 #define list_of_files_current_folder 3
-extern  char * list_of_files_current_folder_1(void *, CLIENT *);
-extern  char * list_of_files_current_folder_1_svc(void *, struct svc_req *);
+extern  serverResponse * list_of_files_current_folder_1(void *, CLIENT *);
+extern  serverResponse * list_of_files_current_folder_1_svc(void *, struct svc_req *);
 #define matrix_multiply 4
-extern  char * matrix_multiply_1(char *, CLIENT *);
-extern  char * matrix_multiply_1_svc(char *, struct svc_req *);
+extern  serverResponse * matrix_multiply_1(inputMatrixes *, CLIENT *);
+extern  serverResponse * matrix_multiply_1_svc(inputMatrixes *, struct svc_req *);
 #define reverse_encryption 5
-extern  char * reverse_encryption_1(char *, CLIENT *);
-extern  char * reverse_encryption_1_svc(char *, struct svc_req *);
+extern  serverResponse * reverse_encryption_1(serverResponse *, CLIENT *);
+extern  serverResponse * reverse_encryption_1_svc(serverResponse *, struct svc_req *);
 extern int assignment3_1_freeresult (SVCXPRT *, xdrproc_t, caddr_t);
 
 #else /* K&R C */
 #define get_date_and_time 1
-extern  char * get_date_and_time_1();
-extern  char * get_date_and_time_1_svc();
+extern  serverResponse * get_date_and_time_1();
+extern  serverResponse * get_date_and_time_1_svc();
 #define sort_list_integers 2
-extern  char * sort_list_integers_1();
-extern  char * sort_list_integers_1_svc();
+extern  serverResponse * sort_list_integers_1();
+extern  serverResponse * sort_list_integers_1_svc();
 #define list_of_files_current_folder 3
-extern  char * list_of_files_current_folder_1();
-extern  char * list_of_files_current_folder_1_svc();
+extern  serverResponse * list_of_files_current_folder_1();
+extern  serverResponse * list_of_files_current_folder_1_svc();
 #define matrix_multiply 4
-extern  char * matrix_multiply_1();
-extern  char * matrix_multiply_1_svc();
+extern  serverResponse * matrix_multiply_1();
+extern  serverResponse * matrix_multiply_1_svc();
 #define reverse_encryption 5
-extern  char * reverse_encryption_1();
-extern  char * reverse_encryption_1_svc();
+extern  serverResponse * reverse_encryption_1();
+extern  serverResponse * reverse_encryption_1_svc();
 extern int assignment3_1_freeresult ();
+#endif /* K&R C */
+
+/* the xdr functions */
+
+#if defined(__STDC__) || defined(__cplusplus)
+extern  bool_t xdr_serverResponse (XDR *, serverResponse*);
+extern  bool_t xdr_inputMatrixes (XDR *, inputMatrixes*);
+
+#else /* K&R C */
+extern bool_t xdr_serverResponse ();
+extern bool_t xdr_inputMatrixes ();
+
 #endif /* K&R C */
 
 #ifdef __cplusplus
