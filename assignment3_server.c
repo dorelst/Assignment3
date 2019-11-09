@@ -10,16 +10,20 @@
 #include <stdio.h>
 #include <dirent.h>
 #include <string.h>
+#include <openssl/conf.h>
+#include <openssl/evp.h>
+#include <openssl/err.h>
 
 
 serverResponse *
 get_date_and_time_1_svc(void *argp, struct svc_req *rqstp)
 {
-	static serverResponse  result_1;
-
 	/*
 	 * insert server code here
 	 */
+
+	static serverResponse  result_1;
+
 	printf("\nMessage from client: Send me the current time!\n");
 
 	char* current_time_string;
@@ -78,16 +82,17 @@ void quickSortList(int arrayToBeSroted[], int low, int high) {
 serverResponse *
 sort_list_integers_1_svc(serverResponse *argp, struct svc_req *rqstp)
 {
-	static serverResponse  result_2;
-
 	/*
 	 * insert server code here
 	 */
+
+	static serverResponse  result_2;
+
 	printf("\nMessage from client: Sort the following list: %s!\n", argp->responseContent);
 
-	char receivedFromClient1[2000];
+	char receivedFromClient1[2000]="";
 	strcpy(receivedFromClient1, argp->responseContent);
-	char receivedFromClient2[2000];
+	char receivedFromClient2[2000]="";
 	strcpy(receivedFromClient2, argp->responseContent);
 
 	int i;
@@ -118,8 +123,8 @@ sort_list_integers_1_svc(serverResponse *argp, struct svc_req *rqstp)
 	int n = sizeof(listOfIntegers)/sizeof(listOfIntegers[0]);
 	quickSortList(listOfIntegers, 0, n-1);
 
-	char build_list[2000];
-	build_list[0] = '\0';
+	char build_list[2000]="";
+	/*build_list[0] = '\0';*/
 
 	for (i=0; i<sizeOfArray; i++) {
 		char buffer[5];
@@ -135,22 +140,24 @@ sort_list_integers_1_svc(serverResponse *argp, struct svc_req *rqstp)
 serverResponse *
 list_of_files_current_folder_1_svc(void *argp, struct svc_req *rqstp)
 {
-	static serverResponse  result_3;
 
 	/*
 	 * insert server code here
 	 */
+
+	static serverResponse  result_3;
+
 	printf("\nMessage from client: Send me the list of files on the server!\n");
 
 	
-	char build_list[2000];
+	char build_list[2000]="";
 
 	DIR *d;
     	struct dirent *dir;
     	d = opendir(".");
    	if (d)
     	{
-		build_list[0] = '\0';
+		/*build_list[0] = '\0';*/
         		while ((dir = readdir(d)) != NULL)
         		{
 			char* file = dir->d_name;
@@ -166,38 +173,311 @@ list_of_files_current_folder_1_svc(void *argp, struct svc_req *rqstp)
 	return &result_3;
 }
 
-serverResponse *
-matrix_multiply_1_svc(serverResponse *argp, struct svc_req *rqstp)
-{
-	static serverResponse  result_4;
+void extractRowsAndColumns(char* stringMatrix, int *dimMatrix) {
+	
+	char tempMatrix[2000]="";
+	strcpy(tempMatrix, stringMatrix);
+	
+	int rows = 0, columns=0;;
+	const char delim[] = "#";
 
+	char *ptr1 = strtok(stringMatrix, delim);
+
+
+	while(ptr1 != NULL)
+	{
+		rows++;
+		ptr1 = strtok(NULL, delim);
+	}
+	
+	const char delim1[] = "#";
+	const char delim2[] = "+";
+	
+	ptr1 = strtok(tempMatrix, delim1);
+	char *line = strtok(ptr1, delim2);
+
+
+	while(line != NULL)
+	{
+		columns++;
+		line = strtok(NULL, delim2);
+	}
+
+	dimMatrix[0] = rows;
+	dimMatrix[1] = columns;
+	
+	tempMatrix[0] = '\0';
+
+}
+
+
+void extractMatrix(char *stringMatrix, int* matrix, int *dimArray) {
+
+
+	char receivedFromClient[2000]="";
+	strcpy(receivedFromClient, stringMatrix);
+	
+	char *ptr1, *ptr2, *line;
+	char *buffer1, *buffer2;
+	
+	int i=0, j=0;
+
+	const char delim1[] = "#";
+	const char delim2[] = "+";	
+
+	for( ptr1=strtok_r(receivedFromClient,delim1,&buffer1) ; ptr1!=NULL ; ptr1=strtok_r(NULL,delim1,&buffer1) ) {
+		j=0;
+		for( ptr2=strtok_r(ptr1,delim2,&buffer2) ; ptr2!=NULL ; ptr2=strtok_r(NULL,delim2,&buffer2) ) {
+			matrix[i*dimArray[1]+j] = atoi(ptr2);
+			j++;
+		}
+		i++;
+	}
+
+}
+
+void printMatrix(int* matrix, int rows, int columns) {
+	
+	int i, j;
+	printf("\n");
+	for(i=0; i<rows; i++) {
+		for(j=0; j<columns; j++) {
+			printf("m[%d][%d]=%d  ",i,j,matrix[i*columns+j]);
+		}
+		printf("\n");
+	}
+
+}
+
+serverResponse *
+matrix_multiply_1_svc(inputMatrixes *argp, struct svc_req *rqstp)
+{
 	/*
 	 * insert server code here
 	 */
 
+	printf("\nMessage from client: Multiply the two matrixes sent!\n");
+
+	static serverResponse  result_4;
+	int m1dim[2] = {0,0};
+	int m2dim[2] = {0,0};
+	
+	char tempMatrix1[2000]="", tempMatrix2[2000]="";
+
+	strcpy(tempMatrix1, argp->matrix1);
+	strcpy(tempMatrix2, argp->matrix2);
+
+	extractRowsAndColumns(tempMatrix1, m1dim);
+	extractRowsAndColumns(tempMatrix2, m2dim);
+	
+	int m1[m1dim[0]][m1dim[1]];
+	int m2[m2dim[0]][m2dim[1]];
+
+	m1[0][0]=0;
+	m2[0][0]=0;
+	
+	strcpy(tempMatrix1, argp->matrix1);
+	strcpy(tempMatrix2, argp->matrix2);
+
+	extractMatrix(tempMatrix1, *m1, m1dim);	
+	extractMatrix(tempMatrix2, *m2, m2dim);
+
+	printf("\nThe two matrixes received from the client:");
+	printf("\n	First matrix:");
+	printMatrix(*m1, m1dim[0], m1dim[1]);
+	printf("\n	Second matrix:");
+	printMatrix(*m2, m2dim[0], m2dim[1]);
+
+
+
+	int i, j, k, m, val;
+	int multipliedMatrix[m1dim[0]][m2dim[1]];
+	char responseToClient[2000]="";
+	char buffer[5];
+	
+	for (i=0; i<m1dim[0];i++) {
+		for(j=0;j<m2dim[1];j++) {
+			val=0;
+			k=0;
+			while (k<m1dim[1]) {
+				val = val + m1[i][k]*m2[k][j];
+				k++;
+			}
+			multipliedMatrix[i][j] = val;
+			
+			sprintf(buffer, "%d", val);
+			strcat(responseToClient, buffer);
+			strcat(responseToClient, "+");
+			buffer[0] = '\0';
+
+		}
+		strcat(responseToClient, "#");
+	}		
+
+
+	printf("\nThe result of these matrixes multiplication is:");
+	printMatrix(*multipliedMatrix, m1dim[0], m2dim[1]);
+
+	/*result_4.responseContent = "Funciton matrix multiply still under construction!";*/
+	result_4.responseContent = responseToClient;
+
 	return &result_4;
+}
+
+void handleErrors(char *message) {
+
+	printf("\nAn error happended! Location: %s", message);
+
+}
+
+int encrypt(unsigned char *plaintext, int plaintext_len, unsigned char *key, unsigned char *iv, unsigned char *ciphertext)
+{
+    	EVP_CIPHER_CTX *ctx;
+
+	int len;
+
+    	int ciphertext_len;
+
+    		/* Create and initialise the context */
+    	if(!(ctx = EVP_CIPHER_CTX_new()))
+        		handleErrors("Create and initialise the context");
+
+    		/*
+     		* Initialise the encryption operation. A 256 bit AES key is used. The
+     		* IV size is 128 bits
+     		*/
+
+    	if(1 != EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv))
+        		handleErrors("Initialise the encryption operation");
+
+     		/* Provide the message to be encrypted, and obtain the encrypted output.*/
+    	if(1 != EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintext_len))
+        		handleErrors("Obtain the encrypted output");
+    	ciphertext_len = len;
+
+
+     		/* Finalise the encryption.*/
+     	if(1 != EVP_EncryptFinal_ex(ctx, ciphertext + len, &len))
+        		handleErrors("Finalise the encryption");
+    	ciphertext_len += len;
+
+    		/* Clean up */
+    	EVP_CIPHER_CTX_free(ctx);
+
+    	return ciphertext_len;
+}
+
+void trimTrailingSpaces(unsigned char *plaintext)
+{
+    	int i,j;
+    		
+    	i = strlen(plaintext)-2;
+	
+    	while(((plaintext[i] == ' ') || (plaintext[i] == 8)) && (i>0))
+    	{
+        		i--;
+    	}
+		/* Mark next character to last non-white space character as NULL */
+	plaintext[i + 1] = '\0';
+
+}
+
+int decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *key, unsigned char *iv, unsigned char *plaintext)
+{
+	EVP_CIPHER_CTX *ctx;
+
+    	int len;
+
+    	int plaintext_len;
+	
+
+    		/* Create and initialise the context */
+    	if(!(ctx = EVP_CIPHER_CTX_new()))
+        		handleErrors("Create and initialise the context");
+
+
+    		/*
+     		* Initialise the decryption operation. A 256 bit AES key is used. The
+     		* IV is 128 bits
+     		*/
+    	if(1 != EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv))
+        		handleErrors("Initialise the decryption operation");
+
+    		/*
+     		* Provide the message to be decrypted, and obtain the plaintext output.
+     		*/
+    	if(1 != EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len))
+        		handleErrors("Obtain the plaintext output");
+    	plaintext_len = len;
+	
+     		/* Finalise the decryption.*/
+	if(1 != EVP_DecryptFinal_ex(ctx, plaintext + len, &len))
+        		handleErrors("Finalise the decryption");
+
+	trimTrailingSpaces(plaintext);
+    	plaintext_len = strlen(plaintext);
+
+    		/* Clean up */
+    	EVP_CIPHER_CTX_free(ctx);
+
+    	return plaintext_len;
+}
+
+char* doEncryptionDecryption(unsigned char* message, int choice) {
+	
+    		/* A 256 bit key */
+    	unsigned char *key = (unsigned char *)"01234567890123456789012345678901";
+
+    		/* A 128 bit IV */
+    	unsigned char *iv = (unsigned char *)"0123456789012345";
+
+    	 	/* Buffer for ciphertext.*/
+    	static unsigned char ciphertext[1920];
+
+    		/* Buffer for the decrypted text */
+    	static unsigned char decryptedtext[1920];
+
+    	int decryptedtext_len, ciphertext_len;
+
+    
+	if (choice == 1) {
+			/* Encrypt the plaintext */
+    		ciphertext_len = encrypt (message, strlen(message), key, iv, ciphertext);
+
+		return ciphertext;
+	} else {
+			/* Decrypt the ciphertext */
+		decryptedtext_len = decrypt(message, strlen(message), key, iv, decryptedtext);
+		
+
+    			/* Add a NULL terminator to make the text printable */
+    		/*decryptedtext[decryptedtext_len] = '\0';*/
+
+		return decryptedtext;
+	}
 }
 
 serverResponse *
 reverse_encryption_1_svc(serverResponse *argp, struct svc_req *rqstp)
 {
-	static serverResponse  result_5;
-
 	/*
 	 * insert server code here
 	 */
 
-	printf("\nString received: %s\n", argp->responseContent);
-	char receivedFromClient[2000];
-	strcpy(receivedFromClient, argp->responseContent);
+	static serverResponse  result_5;
 
-	int stringLength = strlen(argp->responseContent);
-	printf("\nString Lenght = %d\n", stringLength);
+	printf("\nString received: %s and has the length=%d\n", argp->responseContent, strlen(argp->responseContent));
+	unsigned char receivedFromClient[1920];
+	strcpy(receivedFromClient, doEncryptionDecryption(argp->responseContent, 2));
+	printf("\nDecrypted receivde from client = %s of length = %d", receivedFromClient, strlen(receivedFromClient)); 
+	
+
+	int stringLength = strlen(receivedFromClient);
 	int i,j;
 	char temp;
 	i=0;
-	j=stringLength-1;
-	printf("\nReceivde from client = %s\n", receivedFromClient);
+	j=stringLength-2;
+	
 	while (i<=((stringLength/2)-1)) {
 		temp = receivedFromClient[i];
 		receivedFromClient[i] = receivedFromClient[j];
@@ -205,7 +485,10 @@ reverse_encryption_1_svc(serverResponse *argp, struct svc_req *rqstp)
 		i++;
 		j--;
 	}
-	printf("\nReverted String: %s\n", receivedFromClient);		
+	printf("\nReverted String: %s of length = %d", receivedFromClient, strlen(receivedFromClient));
+	strcpy(receivedFromClient, doEncryptionDecryption(receivedFromClient,1));
+
+	printf("\nEncrypted answer is: %s of length = %d", receivedFromClient, strlen(receivedFromClient));	
 
 	result_5.responseContent = receivedFromClient;
 

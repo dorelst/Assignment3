@@ -7,31 +7,433 @@
 #include "assignment3.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <openssl/conf.h>
+#include <openssl/evp.h>
+#include <openssl/err.h>
 
-char* readListOfIntegers() {
-	int sizeOfList,i;
-	printf("\nInput the size of the list of integers: ");
-	scanf("%d", &sizeOfList);
-	int listOfIntegers[sizeOfList];
+char* readListOfIntegersAutomated() {
 	
-	char build_list[2000];
+	int list[6] = {45, 23, 53, 5, 21, 1};
+	int i;
+	static char build_list[2000]="";
 	
 	build_list[0] = '\0';
 
-	for (i=0; i<sizeOfList; i++) {
+	for (i=0; i<6; i++) {
 		char buffer[5];
+		
+		sprintf(buffer, "%d ", list[i]);
+		strcat(build_list, buffer);
+		buffer[0] = '\0';
+	}
+		
+	return build_list;
+}
+
+
+char* readListOfIntegers() {
+	
+	int sizeOfList,i;
+	
+	printf("\nInput the size of the list of integers: ");
+	scanf("%d", &sizeOfList);
+	
+	int listOfIntegers[sizeOfList];
+	static char build_list[2000]="";
+	char buffer[5];
+
+	for (i=0; i<sizeOfList; i++) {
 		printf("\nelement[%d] = ",i);
 		scanf("%d", &listOfIntegers[i]);
 		sprintf(buffer, "%d ", listOfIntegers[i]);
 		strcat(build_list, buffer);
 		buffer[0] = '\0';
 	}
-	
-	printf("\nbuild list = %s\n", build_list);
-	
-
+		
 	return build_list;
 }
+
+void handleErrors(char *message) {
+
+	printf("\nAn error happended! Location: %s", message);
+
+}
+
+
+int encrypt(unsigned char *plaintext, int plaintext_len, unsigned char *key, unsigned char *iv, unsigned char *ciphertext)
+{
+    	EVP_CIPHER_CTX *ctx;
+
+	int len;
+
+    	int ciphertext_len;
+
+    		/* Create and initialise the context */
+    	if(!(ctx = EVP_CIPHER_CTX_new()))
+        		handleErrors("Create and initialise the context");
+
+    		/*
+     		* Initialise the encryption operation. A 256 bit AES key is used. The
+     		* IV size is 128 bits
+     		*/
+
+    	if(1 != EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv))
+        		handleErrors("Initialise the encryption operation");
+
+     		/* Provide the message to be encrypted, and obtain the encrypted output.*/
+    	if(1 != EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintext_len))
+        		handleErrors("Obtain the encrypted output");
+    	ciphertext_len = len;
+
+
+     		/* Finalise the encryption.*/
+     	if(1 != EVP_EncryptFinal_ex(ctx, ciphertext + len, &len))
+        		handleErrors("Finalise the encryption");
+    	ciphertext_len += len;
+
+    		/* Clean up */
+    	EVP_CIPHER_CTX_free(ctx);
+
+    	return ciphertext_len;
+}
+
+void trimTrailingSpaces(unsigned char *plaintext)
+{
+    	int i,j;
+
+    	i = strlen(plaintext)-2;
+	
+    	while(((plaintext[i] == ' ') || (plaintext[i] == 8)) && (i>0))
+    	{
+        		i--;
+    	}
+		/* Mark next character to last non-white space character as NULL */
+	plaintext[i + 1] = '\0';
+
+}
+
+
+int decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *key, unsigned char *iv, unsigned char *plaintext)
+{
+	EVP_CIPHER_CTX *ctx;
+
+    	int len;
+
+    	int plaintext_len;
+	
+
+    		/* Create and initialise the context */
+    	if(!(ctx = EVP_CIPHER_CTX_new()))
+        		handleErrors("Create and initialise the context");
+
+
+    		/*
+     		* Initialise the decryption operation. A 256 bit AES key is used. The
+     		* IV is 128 bits
+     		*/
+    	if(1 != EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv))
+        		handleErrors("Initialise the decryption operation");
+
+    		/*
+     		* Provide the message to be decrypted, and obtain the plaintext output.
+     		*/
+    	if(1 != EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len))
+        		handleErrors("Obtain the plaintext output");
+    	plaintext_len = len;
+	
+     		/* Finalise the decryption.*/
+	if(1 != EVP_DecryptFinal_ex(ctx, plaintext + len, &len))
+        		handleErrors("Finalise the decryption");
+
+	trimTrailingSpaces(plaintext);
+    	plaintext_len = strlen(plaintext);
+
+    		/* Clean up */
+    	EVP_CIPHER_CTX_free(ctx);
+
+    	return plaintext_len;
+}
+
+char* doEncryptionDecryption(unsigned char* message, int choice) {
+	
+    		/* A 256 bit key */
+    	unsigned char *key = (unsigned char *)"01234567890123456789012345678901";
+
+    		/* A 128 bit IV */
+    	unsigned char *iv = (unsigned char *)"0123456789012345";
+
+    	 	/* Buffer for ciphertext.*/
+    	static unsigned char ciphertext[1920];
+
+    		/* Buffer for the decrypted text */
+    	static unsigned char decryptedtext[1920];
+
+    	int decryptedtext_len, ciphertext_len;
+
+    
+	if (choice == 1) {
+			/* Encrypt the plaintext */
+    		ciphertext_len = encrypt (message, strlen(message), key, iv, ciphertext);
+
+		return ciphertext;
+	} else {
+			/* Decrypt the ciphertext */
+		decryptedtext_len = decrypt(message, strlen(message), key, iv, decryptedtext);
+		
+
+    			/* Add a NULL terminator to make the text printable */
+    		/*decryptedtext[decryptedtext_len] = '\0';*/
+
+		return decryptedtext;
+	}
+}
+
+char* readStringAutomated(){
+	static char string[2000]="";
+
+	char inputSring[1920] = "abcdef ghijkl mnopqr";
+
+	printf("\nString to be encrypted and send:\n%s", inputSring);
+	
+	
+	strcpy(string, doEncryptionDecryption(inputSring, 1));
+	printf("\nString encrypted:\n%s \n and has the lenght =%d", string, strlen(string));
+	
+	return string;
+}
+
+char* readString(){
+	static char string[2000]="";
+	char inputSring[1920];
+	printf("\nInput the string to be reversed: ");
+	getchar();
+	fgets(inputSring, 1920, stdin);
+	
+	strcpy(string, doEncryptionDecryption(inputSring, 1));
+	printf("\nString encrypted:\n %s and has the lenght =%d", string, strlen(string));
+	
+	return string;
+}
+
+void printMatrix(int* matrix, int rows, int columns) {
+	
+	int i, j;
+	printf("\n");
+	for(i=0; i<rows; i++) {
+		for(j=0; j<columns; j++) {
+			printf("m[%d][%d]=%d  ",i,j,matrix[i*columns+j]);
+		}
+		printf("\n");
+	}
+
+}
+
+void extractRowsAndColumns(char* stringMatrix, int *dimMatrix) {
+	
+	char tempMatrix[2000]="";
+	strcpy(tempMatrix, stringMatrix);
+	
+	int rows = 0, columns=0;;
+	const char delim[] = "#";
+
+	char *ptr1 = strtok(stringMatrix, delim);
+
+
+	while(ptr1 != NULL)
+	{
+		rows++;
+		ptr1 = strtok(NULL, delim);
+	}
+	
+	const char delim1[] = "#";
+	const char delim2[] = "+";
+	
+	ptr1 = strtok(tempMatrix, delim1);
+	char *line = strtok(ptr1, delim2);
+
+
+	while(line != NULL)
+	{
+		columns++;
+		line = strtok(NULL, delim2);
+	}
+
+	dimMatrix[0] = rows;
+	dimMatrix[1] = columns;
+	
+	tempMatrix[0] = '\0';
+
+}
+
+
+void extractMatrix(char *stringMatrix, int* matrix, int *dimArray) {
+
+
+	char receivedFromClient[2000]="";
+	strcpy(receivedFromClient, stringMatrix);
+	
+	char *ptr1, *ptr2, *line;
+	char *buffer1, *buffer2;
+	
+	int i=0, j=0;
+
+	const char delim1[] = "#";
+	const char delim2[] = "+";	
+
+	for( ptr1=strtok_r(receivedFromClient,delim1,&buffer1) ; ptr1!=NULL ; ptr1=strtok_r(NULL,delim1,&buffer1) ) {
+		j=0;
+		for( ptr2=strtok_r(ptr1,delim2,&buffer2) ; ptr2!=NULL ; ptr2=strtok_r(NULL,delim2,&buffer2) ) {
+			matrix[i*dimArray[1]+j] = atoi(ptr2);
+			j++;
+		}
+		i++;
+	}
+}
+
+void processStringMatrix(char *stringMatrix) {
+
+	char tempMatrix[2000]="";
+	
+	strcpy(tempMatrix, stringMatrix);
+
+	int dimensions[2] = {0, 0};
+	
+	extractRowsAndColumns(tempMatrix, dimensions);
+	
+	int m[dimensions[0]][dimensions[1]];
+	
+	strcpy(tempMatrix, stringMatrix);
+
+	extractMatrix(tempMatrix, *m, dimensions);
+
+	printMatrix(*m, dimensions[0], dimensions[1]);
+
+}
+
+inputMatrixes defineMatrixesAutomated() {
+
+	inputMatrixes matrixes;
+	char matrixA[2000]="";
+	char matrixB[2000]="";
+
+	int m1[3][4] = 
+	{
+		{2, 3, 4, 5},
+		{6, 7, 8, 9},
+		{10, 11, 12, 13}
+	};
+
+	printf("\nFirst Matrix = \n");
+	printMatrix(*m1, 3, 4);
+ 
+	int m2[4][5] =
+	{
+		{14, 15, 16, 17, 18},
+		{19, 20, 21, 22, 23},
+		{24, 25, 26, 27, 28},
+		{30, 31, 32, 33, 34}
+	};
+	printf("\nSecond Matrix = \n");
+	printMatrix(*m2, 4, 5);
+
+	
+	int i,j,k;
+	char buffer[5];
+	for(i=0; i<3;i++) {
+		
+		for(j=0;j<4;j++) {
+			sprintf(buffer, "%d", m1[i][j]);
+			strcat(matrixA, buffer);
+			strcat(matrixA, "+");
+			buffer[0] = '\0';
+		}
+
+
+		strcat(matrixA, "#");
+
+
+	}
+
+
+	for(i=0; i<4;i++) {
+
+		for(j=0;j<5;j++) {
+			sprintf(buffer, "%d",  m2[i][j]);
+			strcat(matrixB, buffer);
+			strcat(matrixB, "+");
+			buffer[0] = '\0';
+		}
+
+
+		strcat(matrixB, "#");
+
+	}
+
+		
+	matrixes.matrix1 = matrixA;
+	matrixes.matrix2 = matrixB;
+
+	
+	return matrixes;
+	
+}
+
+
+inputMatrixes defineMatrixes() {
+	int numberOfColumnsM1, numberOfRowsM1, numberOfColumnsM2, i, j, val;
+	inputMatrixes matrixes;
+	char matrixA[2000]="";
+	char matrixB[2000]="";
+	
+	printf("\nInput number of rows for first matrix 1: ");
+	scanf("%d", &numberOfRowsM1);
+
+	printf("\nInput number of columns for first matrix 1: ");
+	scanf("%d", &numberOfColumnsM1);
+
+	printf("\nInput number of columns for first matrix 2: ");
+	scanf("%d", &numberOfColumnsM2);
+
+	char buffer[5];
+
+	printf("\nInput the first Matrix:");
+	for(i=0; i<numberOfRowsM1; i++) {
+		for(j=0; j<numberOfColumnsM1; j++) {
+			printf("M1[%d,%d]=",i,j);
+			scanf("%d",&val);
+			printf(" ");
+			sprintf(buffer, "%d", val);
+			strcat(matrixA, buffer);
+			strcat(matrixA, "+");
+			buffer[0] = '\0';
+		}
+		strcat(matrixA, "#");
+		printf("\n");
+	}
+	
+
+	printf("\nInput the second Matrix:");
+	for(i=0; i<numberOfColumnsM1; i++) {
+		for(j=0; j<numberOfColumnsM2; j++) {
+			printf("M2[%d,%d]=",i,j);
+			scanf("%d",&val);
+			printf(" ");
+			sprintf(buffer, "%d", val);
+			strcat(matrixB, buffer);
+			strcat(matrixB, "+");
+			buffer[0] = '\0';
+		}
+		strcat(matrixB, "#");
+		printf("\n");
+	}
+	
+
+	matrixes.matrix1 = matrixA;
+	matrixes.matrix2 = matrixB;
+
+	return matrixes;
+}
+
 
 void
 assignment3_1(char *host)
@@ -44,7 +446,7 @@ assignment3_1(char *host)
 	serverResponse  *result_3;
 	char *list_of_files_current_folder_1_arg;
 	serverResponse  *result_4;
-	serverResponse  matrix_multiply_1_arg;
+	inputMatrixes matrix_multiply_1_arg;
 	serverResponse  *result_5;
 	serverResponse  reverse_encryption_1_arg;
 
@@ -56,20 +458,33 @@ assignment3_1(char *host)
 	}
 #endif	/* DEBUG */
 
+	printf("\nPlease choose the way you would like to operate this program:");
+	printf("\n	1 - Automatically load a sample set of data for all the functions");
+	printf("\n	2 - Manually load the data for all the functions\n");
+	int option;
+	do {
+		scanf("%d", &option);
+	} while ((option != 1) && (option != 2));
+	getchar();
+
 	result_1 = get_date_and_time_1((void*)&get_date_and_time_1_arg, clnt);
 	if (result_1 == (serverResponse *) NULL) {
 		clnt_perror (clnt, "call failed");
 	} else {
-		printf("\nCurrent time is: %s\n", result_1->responseContent);
+		printf("\nCurrent time is:\n  %s", result_1->responseContent);
 	}
 	
-	sort_list_integers_1_arg.responseContent = readListOfIntegers();
-	printf("\nReceived input list = %s\n", sort_list_integers_1_arg.responseContent);
+	if (option == 1) {
+		sort_list_integers_1_arg.responseContent = readListOfIntegersAutomated();
+	} else {
+		sort_list_integers_1_arg.responseContent = readListOfIntegers();
+	}
+	printf("\nReceived input list:\n  %s", sort_list_integers_1_arg.responseContent);
 	result_2 = sort_list_integers_1(&sort_list_integers_1_arg, clnt);
 	if (result_2 == (serverResponse *) NULL) {
 		clnt_perror (clnt, "call failed");
 	} else {
-		printf("\nSorted List is: %s\n", result_2->responseContent);
+		printf("\nSorted List is:\n  %s\n", result_2->responseContent);
 	}
 
 
@@ -77,25 +492,35 @@ assignment3_1(char *host)
 	if (result_3 == (serverResponse *) NULL) {
 		clnt_perror (clnt, "call failed");
 	} else {
-		printf("\nThe list of files on current folder on server is: %s\n", result_3->responseContent);
+		printf("\nThe list of files on current folder on server is:\n%s\n", result_3->responseContent);
 	}
 
-
+	if (option == 1) {
+		matrix_multiply_1_arg = defineMatrixesAutomated();
+	} else {
+		matrix_multiply_1_arg = defineMatrixes();
+	}
 	result_4 = matrix_multiply_1(&matrix_multiply_1_arg, clnt);
 	if (result_4 == (serverResponse *) NULL) {
 		clnt_perror (clnt, "call failed");
+	} else {
+		printf("\nServer responded for matrix multiplications:\n");
+		processStringMatrix(result_4->responseContent);
 	}
 	
-	char string[2000];
-	printf("\nInput the string to be reversed: ");
-	getchar();
-	fgets(string, 2000, stdin);
-	reverse_encryption_1_arg.responseContent = string;
+	if (option == 1) {
+		reverse_encryption_1_arg.responseContent = readStringAutomated();
+	} else {
+		reverse_encryption_1_arg.responseContent = readString();
+	}
 	result_5 = reverse_encryption_1(&reverse_encryption_1_arg, clnt);
+	char decryptedMessage[2000]="";
+	printf("\nMessage received before decryption = \n%s", result_5->responseContent);
+	strcpy(decryptedMessage, doEncryptionDecryption(result_5->responseContent, 2));
 	if (result_5 == (serverResponse *) NULL) {
 		clnt_perror (clnt, "call failed");
 	} else {
-		printf("\nThe reversed encrypted string received is: %s\n", result_5->responseContent);
+		printf("\nThe reversed decrypted string received is:\n  %s of length = %d\n", decryptedMessage, strlen(decryptedMessage));
 	}
 
 #ifndef	DEBUG
