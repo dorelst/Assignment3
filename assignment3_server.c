@@ -14,7 +14,7 @@
 #include <openssl/evp.h>
 #include <openssl/err.h>
 
-
+/* This function generates the current time on the server side and sends it to the client */
 serverResponse *
 get_date_and_time_1_svc(void *argp, struct svc_req *rqstp)
 {
@@ -29,11 +29,13 @@ get_date_and_time_1_svc(void *argp, struct svc_req *rqstp)
 	char* current_time_string;
 	time_t current_time;
 
+	/* Current time is read in the form of epoch time */
 	current_time = time(NULL);
 	if (current_time == ((time_t)-1)) {
 		printf("Failure to obtain teh current time.\n");
 		exit(EXIT_FAILURE);
 	}
+	/* The epoch time is converted to month, day, time format and saved a as a string */
 	current_time_string = ctime(&current_time);
 	if (current_time_string == NULL) {
 		printf("Failure to convert to current time.\n");
@@ -42,23 +44,29 @@ get_date_and_time_1_svc(void *argp, struct svc_req *rqstp)
 
 	result_1.responseContent = current_time_string;
 
-	
-
-
 	return &result_1;
 }
 
+
+/* This function swaps to values from an array of integers */
 void swap(int* first, int* second) {
 	int temp = *first;
 	*first = *second;
 	*second = temp;
 }
 
+
+/* This function creates the partions used by the quick sort algorithm to sort a list of integers */
 int create_sorting_partition(int arr[], int low, int high) {
+	
+	/* The pivot for this quick sort implementation is the last element */
 	int pivot = arr[high];
 	int i = low -1;
 	int j;
 	for(j= low; j<=high-1; j++) {
+		/* If the element that is evaluated is smaller than the pivot than index i for the smaller elements is increased */
+		/* and current element that is evaluated (on j position) is swap with element on the i position (the one before the */
+		/* last smaller elemetn than pivot) */
 		if (arr[j]<pivot) {
 			i++;
 			swap(&arr[i], &arr[j]);
@@ -69,10 +77,14 @@ int create_sorting_partition(int arr[], int low, int high) {
 	return (i+1);
 }
 
+
+/* This function recursively sort the list of integers using quick sort algorithm */
 void quickSortList(int arrayToBeSroted[], int low, int high) {
 	if (low<high) {
+		/* Creates the index pi for the two partition that are used to sort the list */
 		int pi = create_sorting_partition(arrayToBeSroted, low, high);
-
+		
+		/* The quicksorList function is applied recursively on the two partition determined by index pi */
 		quickSortList(arrayToBeSroted, low, pi-1);
 		quickSortList(arrayToBeSroted, pi+1, high);
 	}
@@ -97,10 +109,13 @@ sort_list_integers_1_svc(serverResponse *argp, struct svc_req *rqstp)
 
 	int i;
 	int sizeOfArray = 0;
-	char delim[] = " ";
+			
+	/* "+" is the marker for the end of a cell value in the stringify lsit of integers */
+	char delim[] = "+";
 
 	char *ptr1 = strtok(receivedFromClient1, delim);
 
+	/* Size of the list calculated */
 	i=0;
 	while(ptr1 != NULL)
 	{
@@ -112,6 +127,7 @@ sort_list_integers_1_svc(serverResponse *argp, struct svc_req *rqstp)
 
 	char *ptr2 = strtok(receivedFromClient2, delim);
 	
+	/* The list of integers is generated from the stringify version received from the client */
 	i=0;
 	while(ptr2 != NULL)
 	{
@@ -120,16 +136,19 @@ sort_list_integers_1_svc(serverResponse *argp, struct svc_req *rqstp)
 		i++;
 	}
 
-	int n = sizeof(listOfIntegers)/sizeof(listOfIntegers[0]);
-	quickSortList(listOfIntegers, 0, n-1);
+	
+	/* int n = sizeof(listOfIntegers)/sizeof(listOfIntegers[0]); */
+	quickSortList(listOfIntegers, 0, sizeOfArray-1);
 
 	char build_list[2000]="";
-	/*build_list[0] = '\0';*/
 
+	/* The sorted list is converted back to a string a send to client */
 	for (i=0; i<sizeOfArray; i++) {
 		char buffer[5];
-		sprintf(buffer, "%d ", listOfIntegers[i]);
+		sprintf(buffer, "%d", listOfIntegers[i]);
 		strcat(build_list, buffer);
+		/* "+" is the marker for the end of a cell value in the stringify lsit of integers */
+		strcat(build_list, "+");
 		buffer[0] = '\0';
 	}
 
@@ -137,6 +156,8 @@ sort_list_integers_1_svc(serverResponse *argp, struct svc_req *rqstp)
 	return &result_2;
 }
 
+
+/* This function generates a list of files and folders present in the current folder, from wheren the server application is running */
 serverResponse *
 list_of_files_current_folder_1_svc(void *argp, struct svc_req *rqstp)
 {
@@ -154,10 +175,11 @@ list_of_files_current_folder_1_svc(void *argp, struct svc_req *rqstp)
 
 	DIR *d;
     	struct dirent *dir;
+	/* Opens the current folder */
     	d = opendir(".");
    	if (d)
     	{
-		/*build_list[0] = '\0';*/
+		/* adds every item found to the list */
         		while ((dir = readdir(d)) != NULL)
         		{
 			char* file = dir->d_name;
@@ -173,12 +195,15 @@ list_of_files_current_folder_1_svc(void *argp, struct svc_req *rqstp)
 	return &result_3;
 }
 
+
+/* This function extract the numbers of rows and columns from a 2D Array that was converted to a string */
 void extractRowsAndColumns(char* stringMatrix, int *dimMatrix) {
 	
 	char tempMatrix[2000]="";
 	strcpy(tempMatrix, stringMatrix);
 	
-	int rows = 0, columns=0;;
+	int rows = 0, columns=0;
+	/* "#" is the marker for the end of a row in the stringify matrix */
 	const char delim[] = "#";
 
 	char *ptr1 = strtok(stringMatrix, delim);
@@ -190,6 +215,7 @@ void extractRowsAndColumns(char* stringMatrix, int *dimMatrix) {
 		ptr1 = strtok(NULL, delim);
 	}
 	
+	/* "+" is the marker for the end of a cell value in the stringify matrix */
 	const char delim1[] = "#";
 	const char delim2[] = "+";
 	
@@ -211,6 +237,7 @@ void extractRowsAndColumns(char* stringMatrix, int *dimMatrix) {
 }
 
 
+/* This function extract a 2D Array of integers from a matrix that was converted to a string */
 void extractMatrix(char *stringMatrix, int* matrix, int *dimArray) {
 
 
@@ -222,6 +249,8 @@ void extractMatrix(char *stringMatrix, int* matrix, int *dimArray) {
 	
 	int i=0, j=0;
 
+	/* "#" is the marker for the end of a row in the stringify matrix */
+	/* "+" is the marker for the end of a cell value in the stringify matrix */
 	const char delim1[] = "#";
 	const char delim2[] = "+";	
 
@@ -233,9 +262,10 @@ void extractMatrix(char *stringMatrix, int* matrix, int *dimArray) {
 		}
 		i++;
 	}
-
 }
 
+
+/* This function prints to the screen the content of 2D Array */
 void printMatrix(int* matrix, int rows, int columns) {
 	
 	int i, j;
@@ -249,6 +279,8 @@ void printMatrix(int* matrix, int rows, int columns) {
 
 }
 
+
+/* This function multiply two matrixes sent by the client and returns the result converted into a string */
 serverResponse *
 matrix_multiply_1_svc(inputMatrixes *argp, struct svc_req *rqstp)
 {
@@ -267,6 +299,7 @@ matrix_multiply_1_svc(inputMatrixes *argp, struct svc_req *rqstp)
 	strcpy(tempMatrix1, argp->matrix1);
 	strcpy(tempMatrix2, argp->matrix2);
 
+	/* The numbers of rows and columns are extracted here from the two stringify matrixes received */
 	extractRowsAndColumns(tempMatrix1, m1dim);
 	extractRowsAndColumns(tempMatrix2, m2dim);
 	
@@ -279,6 +312,7 @@ matrix_multiply_1_svc(inputMatrixes *argp, struct svc_req *rqstp)
 	strcpy(tempMatrix1, argp->matrix1);
 	strcpy(tempMatrix2, argp->matrix2);
 
+	/* The two matrixes that will be multiplied are extracted from the two stringify matrixes received */
 	extractMatrix(tempMatrix1, *m1, m1dim);	
 	extractMatrix(tempMatrix2, *m2, m2dim);
 
@@ -295,16 +329,22 @@ matrix_multiply_1_svc(inputMatrixes *argp, struct svc_req *rqstp)
 	char responseToClient[2000]="";
 	char buffer[5];
 	
+	/* The matrix multiplication is done here */
+	/* There isn't any check for the number of columns to equals the number of rows, because when the matrixes are input the user is asked */
+	/* only for the number of rows and columns for the first matrix, and the number of columns for the second matrix */
+	/* and the number of rows for the second matrix is iniated with the value for the number of columns for the first matrix */ 
 	for (i=0; i<m1dim[0];i++) {
 		for(j=0;j<m2dim[1];j++) {
 			val=0;
 			k=0;
+			/* The value for each element is calculated in this while loop */
 			while (k<m1dim[1]) {
 				val = val + m1[i][k]*m2[k][j];
 				k++;
 			}
 			multipliedMatrix[i][j] = val;
 			
+			/* The result of the matrix multiplications is converted to a string here */
 			sprintf(buffer, "%d", val);
 			strcat(responseToClient, buffer);
 			strcat(responseToClient, "+");
@@ -318,18 +358,21 @@ matrix_multiply_1_svc(inputMatrixes *argp, struct svc_req *rqstp)
 	printf("\nThe result of these matrixes multiplication is:");
 	printMatrix(*multipliedMatrix, m1dim[0], m2dim[1]);
 
-	/*result_4.responseContent = "Funciton matrix multiply still under construction!";*/
 	result_4.responseContent = responseToClient;
 
 	return &result_4;
 }
 
+
+/* Function to handle erros generated by encryption/decryption functions */
 void handleErrors(char *message) {
 
 	printf("\nAn error happended! Location: %s", message);
 
 }
 
+
+/* Function to encrypt a string */
 int encrypt(unsigned char *plaintext, int plaintext_len, unsigned char *key, unsigned char *iv, unsigned char *ciphertext)
 {
     	EVP_CIPHER_CTX *ctx;
@@ -342,11 +385,10 @@ int encrypt(unsigned char *plaintext, int plaintext_len, unsigned char *key, uns
     	if(!(ctx = EVP_CIPHER_CTX_new()))
         		handleErrors("Create and initialise the context");
 
-    		/*
-     		* Initialise the encryption operation. A 256 bit AES key is used. The
-     		* IV size is 128 bits
-     		*/
-
+    		
+     		/* Initialise the encryption operation. A 256 bit AES key is used. The
+     		 IV size is 128 bits */
+     		
     	if(1 != EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv))
         		handleErrors("Initialise the encryption operation");
 
@@ -367,12 +409,16 @@ int encrypt(unsigned char *plaintext, int plaintext_len, unsigned char *key, uns
     	return ciphertext_len;
 }
 
+
+/* This function trims the trailing blanck characters generated by the decrypte function */
 void trimTrailingSpaces(unsigned char *plaintext)
 {
     	int i,j;
-    		
+	
+	/* Set the starting position from the end of the string, skipping the new line and end of string characters */
     	i = strlen(plaintext)-2;
 	
+	/* The encryption function generates ending backspace ASCI codes that need to be deleted */
     	while(((plaintext[i] == ' ') || (plaintext[i] == 8)) && (i>0))
     	{
         		i--;
@@ -382,6 +428,8 @@ void trimTrailingSpaces(unsigned char *plaintext)
 
 }
 
+
+/* This function encrypt */
 int decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *key, unsigned char *iv, unsigned char *plaintext)
 {
 	EVP_CIPHER_CTX *ctx;
@@ -395,17 +443,12 @@ int decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *key, u
     	if(!(ctx = EVP_CIPHER_CTX_new()))
         		handleErrors("Create and initialise the context");
 
+     		/* Initialise the decryption operation. A 256 bit AES key is used. The
+     		IV is 128 bits */
+       	if(1 != EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv))
+        	handleErrors("Initialise the decryption operation");
 
-    		/*
-     		* Initialise the decryption operation. A 256 bit AES key is used. The
-     		* IV is 128 bits
-     		*/
-    	if(1 != EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv))
-        		handleErrors("Initialise the decryption operation");
-
-    		/*
-     		* Provide the message to be decrypted, and obtain the plaintext output.
-     		*/
+     		/* Provide the message to be decrypted, and obtain the plaintext output */
     	if(1 != EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len))
         		handleErrors("Obtain the plaintext output");
     	plaintext_len = len;
@@ -414,6 +457,7 @@ int decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *key, u
 	if(1 != EVP_DecryptFinal_ex(ctx, plaintext + len, &len))
         		handleErrors("Finalise the decryption");
 
+	/* Remove the trailing blanck spaces and backspace characters */
 	trimTrailingSpaces(plaintext);
     	plaintext_len = strlen(plaintext);
 
@@ -423,6 +467,8 @@ int decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *key, u
     	return plaintext_len;
 }
 
+
+/* This function set the context for encryption or decryption of a string */
 char* doEncryptionDecryption(unsigned char* message, int choice) {
 	
     		/* A 256 bit key */
@@ -457,19 +503,23 @@ char* doEncryptionDecryption(unsigned char* message, int choice) {
 	}
 }
 
+
+/* This function implements the string reverse function encrypting the result before sending it back to the client */
 serverResponse *
 reverse_encryption_1_svc(serverResponse *argp, struct svc_req *rqstp)
 {
+
 	/*
 	 * insert server code here
 	 */
 
 	static serverResponse  result_5;
 
-	printf("\nString received: %s and has the length=%d\n", argp->responseContent, strlen(argp->responseContent));
+	printf("\nString received: %s\n", argp->responseContent);
 	unsigned char receivedFromClient[1920];
+	/* The encrypted string received from the client is decrypted here */
 	strcpy(receivedFromClient, doEncryptionDecryption(argp->responseContent, 2));
-	printf("\nDecrypted receivde from client = %s of length = %d", receivedFromClient, strlen(receivedFromClient)); 
+	printf("\nDecrypted receivde from client = %s\n", receivedFromClient); 
 	
 
 	int stringLength = strlen(receivedFromClient);
@@ -478,6 +528,7 @@ reverse_encryption_1_svc(serverResponse *argp, struct svc_req *rqstp)
 	i=0;
 	j=stringLength-2;
 	
+	/* The received string is reversed in this while loop */
 	while (i<=((stringLength/2)-1)) {
 		temp = receivedFromClient[i];
 		receivedFromClient[i] = receivedFromClient[j];
@@ -485,10 +536,12 @@ reverse_encryption_1_svc(serverResponse *argp, struct svc_req *rqstp)
 		i++;
 		j--;
 	}
-	printf("\nReverted String: %s of length = %d", receivedFromClient, strlen(receivedFromClient));
+
+	/* The reversed result is encrypted */
+	printf("\nReverted String: %s\n", receivedFromClient);
 	strcpy(receivedFromClient, doEncryptionDecryption(receivedFromClient,1));
 
-	printf("\nEncrypted answer is: %s of length = %d", receivedFromClient, strlen(receivedFromClient));	
+	printf("\nEncrypted answer is: %s\n", receivedFromClient);	
 
 	result_5.responseContent = receivedFromClient;
 
