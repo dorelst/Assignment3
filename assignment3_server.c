@@ -26,7 +26,7 @@ get_date_and_time_1_svc(void *argp, struct svc_req *rqstp)
 
 	printf("\nMessage from client: Send me the current time!\n");
 
-	char* current_time_string;
+	char *current_time_string;
 	time_t current_time;
 
 	/* Current time is read in the form of epoch time */
@@ -43,7 +43,7 @@ get_date_and_time_1_svc(void *argp, struct svc_req *rqstp)
 	}
 
 	result_1.responseContent = current_time_string;
-
+	
 	return &result_1;
 }
 
@@ -171,7 +171,7 @@ list_of_files_current_folder_1_svc(void *argp, struct svc_req *rqstp)
 	printf("\nMessage from client: Send me the list of files on the server!\n");
 
 	
-	char build_list[2000]="";
+	char *build_list = (char *) calloc (2000, sizeof(char));
 
 	DIR *d;
     	struct dirent *dir;
@@ -190,8 +190,11 @@ list_of_files_current_folder_1_svc(void *argp, struct svc_req *rqstp)
         		closedir(d);
     	}
 
+	strcat(build_list, "\0");
 	result_3.responseContent = build_list;
 	
+	free(build_list);
+
 	return &result_3;
 }
 
@@ -199,7 +202,7 @@ list_of_files_current_folder_1_svc(void *argp, struct svc_req *rqstp)
 /* This function extract the numbers of rows and columns from a 2D Array that was converted to a string */
 void extractRowsAndColumns(char* stringMatrix, int *dimMatrix) {
 	
-	char tempMatrix[2000]="";
+	char *tempMatrix = (char *) calloc (2000, sizeof(char));
 	strcpy(tempMatrix, stringMatrix);
 	
 	int rows = 0, columns=0;
@@ -232,7 +235,7 @@ void extractRowsAndColumns(char* stringMatrix, int *dimMatrix) {
 	dimMatrix[0] = rows;
 	dimMatrix[1] = columns;
 	
-	tempMatrix[0] = '\0';
+	free(tempMatrix);
 
 }
 
@@ -240,9 +243,6 @@ void extractRowsAndColumns(char* stringMatrix, int *dimMatrix) {
 /* This function extract a 2D Array of integers from a matrix that was converted to a string */
 void extractMatrix(char *stringMatrix, int* matrix, int *dimArray) {
 
-
-	char receivedFromClient[2000]="";
-	strcpy(receivedFromClient, stringMatrix);
 	
 	char *ptr1, *ptr2, *line;
 	char *buffer1, *buffer2;
@@ -254,9 +254,9 @@ void extractMatrix(char *stringMatrix, int* matrix, int *dimArray) {
 	const char delim1[] = "#";
 	const char delim2[] = "+";	
 
-	for( ptr1=strtok_r(receivedFromClient,delim1,&buffer1) ; ptr1!=NULL ; ptr1=strtok_r(NULL,delim1,&buffer1) ) {
+	for( ptr1=strtok_r(stringMatrix, delim1, &buffer1) ; ptr1!=NULL ; ptr1=strtok_r(NULL, delim1, &buffer1) ) {
 		j=0;
-		for( ptr2=strtok_r(ptr1,delim2,&buffer2) ; ptr2!=NULL ; ptr2=strtok_r(NULL,delim2,&buffer2) ) {
+		for( ptr2=strtok_r(ptr1, delim2, &buffer2) ; ptr2!=NULL ; ptr2=strtok_r(NULL, delim2, &buffer2) ) {
 			matrix[i*dimArray[1]+j] = atoi(ptr2);
 			j++;
 		}
@@ -291,10 +291,12 @@ matrix_multiply_1_svc(inputMatrixes *argp, struct svc_req *rqstp)
 	printf("\nMessage from client: Multiply the two matrixes sent!\n");
 
 	static serverResponse  result_4;
+
 	int m1dim[2] = {0,0};
 	int m2dim[2] = {0,0};
 	
-	char tempMatrix1[2000]="", tempMatrix2[2000]="";
+	char *tempMatrix1 = (char *) calloc (2000, sizeof(char));
+	char *tempMatrix2 = (char *) calloc (2000, sizeof(char));
 
 	strcpy(tempMatrix1, argp->matrix1);
 	strcpy(tempMatrix2, argp->matrix2);
@@ -316,6 +318,9 @@ matrix_multiply_1_svc(inputMatrixes *argp, struct svc_req *rqstp)
 	extractMatrix(tempMatrix1, *m1, m1dim);	
 	extractMatrix(tempMatrix2, *m2, m2dim);
 
+	free(tempMatrix1);
+	free(tempMatrix2);
+
 	printf("\nThe two matrixes received from the client:");
 	printf("\n	First matrix:");
 	printMatrix(*m1, m1dim[0], m1dim[1]);
@@ -326,7 +331,7 @@ matrix_multiply_1_svc(inputMatrixes *argp, struct svc_req *rqstp)
 
 	int i, j, k, m, val;
 	int multipliedMatrix[m1dim[0]][m2dim[1]];
-	char responseToClient[2000]="";
+	char *responseToClient = (char *) calloc (2000, sizeof(char));
 	char buffer[5];
 	
 	/* The matrix multiplication is done here */
@@ -359,6 +364,8 @@ matrix_multiply_1_svc(inputMatrixes *argp, struct svc_req *rqstp)
 	printMatrix(*multipliedMatrix, m1dim[0], m2dim[1]);
 
 	result_4.responseContent = responseToClient;
+	
+	free(responseToClient);
 
 	return &result_4;
 }
@@ -469,7 +476,7 @@ int decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *key, u
 
 
 /* This function set the context for encryption or decryption of a string */
-char* doEncryptionDecryption(unsigned char* message, int choice) {
+void doEncryptionDecryption(unsigned char *textprocessed, int choice) {
 	
     		/* A 256 bit key */
     	unsigned char *key = (unsigned char *)"01234567890123456789012345678901";
@@ -478,29 +485,32 @@ char* doEncryptionDecryption(unsigned char* message, int choice) {
     	unsigned char *iv = (unsigned char *)"0123456789012345";
 
     	 	/* Buffer for ciphertext.*/
-    	static unsigned char ciphertext[1920];
+    	/*static unsigned char ciphertext[1920];*/
 
     		/* Buffer for the decrypted text */
-    	static unsigned char decryptedtext[1920];
+    	/*static unsigned char decryptedtext[1920];*/
+
+	unsigned char *tempMessage = (char *) calloc (1920, sizeof(char));
+	strcpy(tempMessage, textprocessed);
 
     	int decryptedtext_len, ciphertext_len;
 
     
 	if (choice == 1) {
 			/* Encrypt the plaintext */
-    		ciphertext_len = encrypt (message, strlen(message), key, iv, ciphertext);
+    		ciphertext_len = encrypt (tempMessage , strlen(textprocessed), key, iv, textprocessed);
 
-		return ciphertext;
 	} else {
 			/* Decrypt the ciphertext */
-		decryptedtext_len = decrypt(message, strlen(message), key, iv, decryptedtext);
+		decryptedtext_len = decrypt(tempMessage , strlen(textprocessed), key, iv, textprocessed);
 		
 
     			/* Add a NULL terminator to make the text printable */
     		/*decryptedtext[decryptedtext_len] = '\0';*/
 
-		return decryptedtext;
 	}
+
+	free(tempMessage);
 }
 
 
@@ -516,9 +526,12 @@ reverse_encryption_1_svc(serverResponse *argp, struct svc_req *rqstp)
 	static serverResponse  result_5;
 
 	printf("\nString received: %s\n", argp->responseContent);
-	unsigned char receivedFromClient[1920];
+	unsigned char *receivedFromClient = (char *) calloc (1920, sizeof(char));
+
+	strcpy(receivedFromClient, argp->responseContent);
+
 	/* The encrypted string received from the client is decrypted here */
-	strcpy(receivedFromClient, doEncryptionDecryption(argp->responseContent, 2));
+	doEncryptionDecryption(receivedFromClient, 2);
 	printf("\nDecrypted receivde from client = %s\n", receivedFromClient); 
 	
 
@@ -539,11 +552,13 @@ reverse_encryption_1_svc(serverResponse *argp, struct svc_req *rqstp)
 
 	/* The reversed result is encrypted */
 	printf("\nReverted String: %s\n", receivedFromClient);
-	strcpy(receivedFromClient, doEncryptionDecryption(receivedFromClient,1));
+	doEncryptionDecryption(receivedFromClient,1);
 
 	printf("\nEncrypted answer is: %s\n", receivedFromClient);	
 
 	result_5.responseContent = receivedFromClient;
+
+	free(receivedFromClient);
 
 	return &result_5;
 }

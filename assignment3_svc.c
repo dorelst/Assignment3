@@ -11,14 +11,47 @@
 #include <memory.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <pthread.h>
+#include <time.h>
+
 
 #ifndef SIG_PF
 #define SIG_PF void(*)(int)
 #endif
 
-static void
-assignment3_1(struct svc_req *rqstp, register SVCXPRT *transp)
-{
+/* These are the global variables used to create the threads */
+pthread_t p_thread;
+pthread_attr_t attr;
+
+/* This structure will store the context information used to process a client request */
+typedef struct thr_context {
+  struct svc_req *rqstp;
+  SVCXPRT *transp;
+} thr_context;
+
+
+/* This function delays the execution of the program for the number of seconds specified when called */
+void delay(unsigned int secs) {
+    unsigned int retTime = time(0) + secs;   // Get finishing time.
+    while (time(0) < retTime);               // Loop until it arrives.
+}
+
+
+/* This function processes a request received from a client */
+void *serv_request(void *data) {
+
+	/* The context data is unpacked from the wrapper variable used to pass them to the client processing function */
+  	thr_context *context = (thr_context *)data;
+  	struct svc_req *rqstp = context->rqstp;
+  	register SVCXPRT *transp = context->transp;
+
+	/* Here it prints the id of the thread created for the new client request received */
+	/*int *tid = (int*)p_thread;
+	printf("\nThread ID = %d", &tid);*/
+
+	/* Can be uncomment and used to see how multithreading works */
+	/* delay(3); */
+
 	union {
 		serverResponse sort_list_integers_1_arg;
 		inputMatrixes matrix_multiply_1_arg;
@@ -81,6 +114,90 @@ assignment3_1(struct svc_req *rqstp, register SVCXPRT *transp)
 		exit (1);
 	}
 	return;
+
+}
+
+/* This function create a new thread when a client request is received and passes the context information to the client request processing function */
+static void
+assignment3_1(struct svc_req *rqstp, register SVCXPRT *transp)
+{
+
+	/* The context data is wrapped to be passed to the client request processing function */
+  	thr_context *data_ptr = (thr_context *)malloc(sizeof(thr_context));
+  	data_ptr->rqstp = rqstp;
+  	data_ptr->transp = transp;
+
+	/* A new threa is created when a client request is received */
+  	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
+  	pthread_create(&p_thread, &attr, serv_request, (void *)data_ptr);
+
+
+/*
+	union {
+		serverResponse sort_list_integers_1_arg;
+		inputMatrixes matrix_multiply_1_arg;
+		serverResponse reverse_encryption_1_arg;
+	} argument;
+	char *result;
+	xdrproc_t _xdr_argument, _xdr_result;
+	char *(*local)(char *, struct svc_req *);
+
+	switch (rqstp->rq_proc) {
+	case NULLPROC:
+		(void) svc_sendreply (transp, (xdrproc_t) xdr_void, (char *)NULL);
+		return;
+
+	case get_date_and_time:
+		_xdr_argument = (xdrproc_t) xdr_void;
+		_xdr_result = (xdrproc_t) xdr_serverResponse;
+		local = (char *(*)(char *, struct svc_req *)) get_date_and_time_1_svc;
+		break;
+
+	case sort_list_integers:
+		_xdr_argument = (xdrproc_t) xdr_serverResponse;
+		_xdr_result = (xdrproc_t) xdr_serverResponse;
+		local = (char *(*)(char *, struct svc_req *)) sort_list_integers_1_svc;
+		break;
+
+	case list_of_files_current_folder:
+		_xdr_argument = (xdrproc_t) xdr_void;
+		_xdr_result = (xdrproc_t) xdr_serverResponse;
+		local = (char *(*)(char *, struct svc_req *)) list_of_files_current_folder_1_svc;
+		break;
+
+	case matrix_multiply:
+		_xdr_argument = (xdrproc_t) xdr_inputMatrixes;
+		_xdr_result = (xdrproc_t) xdr_serverResponse;
+		local = (char *(*)(char *, struct svc_req *)) matrix_multiply_1_svc;
+		break;
+
+	case reverse_encryption:
+		_xdr_argument = (xdrproc_t) xdr_serverResponse;
+		_xdr_result = (xdrproc_t) xdr_serverResponse;
+		local = (char *(*)(char *, struct svc_req *)) reverse_encryption_1_svc;
+		break;
+
+	default:
+		svcerr_noproc (transp);
+		return;
+	}
+	memset ((char *)&argument, 0, sizeof (argument));
+	if (!svc_getargs (transp, (xdrproc_t) _xdr_argument, (caddr_t) &argument)) {
+		svcerr_decode (transp);
+		return;
+	}
+	result = (*local)((char *)&argument, rqstp);
+	if (result != NULL && !svc_sendreply(transp, (xdrproc_t) _xdr_result, result)) {
+		svcerr_systemerr (transp);
+	}
+	if (!svc_freeargs (transp, (xdrproc_t) _xdr_argument, (caddr_t) &argument)) {
+		fprintf (stderr, "%s", "unable to free arguments");
+		exit (1);
+	}
+	return;
+*/
+
 }
 
 int

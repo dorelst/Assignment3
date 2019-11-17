@@ -35,8 +35,36 @@ char* readListOfIntegersAutomated() {
 	return build_list;
 }
 
+
+/* This function generates a list of integers (defined manually by the user) for the server sort list function to sort */
+char* readListOfIntegers() {
+	
+	int sizeOfList,i;
+	
+	printf("\nInput the size of the list of integers: ");
+	scanf("%d", &sizeOfList);
+	
+	int listOfIntegers[sizeOfList];
+	static char build_list[2000]="";
+	char buffer[5];
+
+	/* The integers list is converted into a string */
+	for (i=0; i<sizeOfList; i++) {
+		printf("\nelement[%d] = ",i);
+		scanf("%d", &listOfIntegers[i]);
+		sprintf(buffer, "%d", listOfIntegers[i]);
+		strcat(build_list, buffer);
+		/* "+" is the marker for the end of a cell value in the stringify lsit of integers */
+		strcat(build_list, "+");
+		buffer[0] = '\0';
+	}
+		
+	return build_list;
+}
+
+
 /* This function converts a stringify list of integers into an array of integers */
-void convertStringListIntoArrayOfIntegers(char *stringList) {
+void convertStringListIntoArrayOfIntegers(char* stringList) {
 
 	char receivedFromClient1[2000]="";
 	strcpy(receivedFromClient1, stringList);
@@ -76,35 +104,6 @@ void convertStringListIntoArrayOfIntegers(char *stringList) {
 		printf("%d; ", listOfIntegers[i]);
 	}
 
-}
-
-
-
-
-/* This function generates a list of integers (defined manually by the user) for the server sort list function to sort */
-char* readListOfIntegers() {
-	
-	int sizeOfList,i;
-	
-	printf("\nInput the size of the list of integers: ");
-	scanf("%d", &sizeOfList);
-	
-	int listOfIntegers[sizeOfList];
-	static char build_list[2000]="";
-	char buffer[5];
-
-	/* The integers list is converted into a string */
-	for (i=0; i<sizeOfList; i++) {
-		printf("\nelement[%d] = ",i);
-		scanf("%d", &listOfIntegers[i]);
-		sprintf(buffer, "%d", listOfIntegers[i]);
-		strcat(build_list, buffer);
-		/* "+" is the marker for the end of a cell value in the stringify lsit of integers */
-		strcat(build_list, "+");
-		buffer[0] = '\0';
-	}
-		
-	return build_list;
 }
 
 
@@ -213,7 +212,7 @@ int decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *key, u
 
 
 /* This function set the context for encryption or decryption of a string */
-char* doEncryptionDecryption(unsigned char* message, int choice) {
+void doEncryptionDecryption(unsigned char *textprocessed, int choice) {
 	
     		/* A 256 bit key */
     	unsigned char *key = (unsigned char *)"01234567890123456789012345678901";
@@ -222,29 +221,32 @@ char* doEncryptionDecryption(unsigned char* message, int choice) {
     	unsigned char *iv = (unsigned char *)"0123456789012345";
 
     	 	/* Buffer for ciphertext.*/
-    	static unsigned char ciphertext[1920];
+    	/*static unsigned char ciphertext[1920];*/
 
     		/* Buffer for the decrypted text */
-    	static unsigned char decryptedtext[1920];
+    	/*static unsigned char decryptedtext[1920];*/
+
+	unsigned char *tempMessage = (char *) calloc (1920, sizeof(char));
+	strcpy(tempMessage, textprocessed);
 
     	int decryptedtext_len, ciphertext_len;
 
     
 	if (choice == 1) {
 			/* Encrypt the plaintext */
-    		ciphertext_len = encrypt (message, strlen(message), key, iv, ciphertext);
+    		ciphertext_len = encrypt (tempMessage , strlen(textprocessed), key, iv, textprocessed);
 
-		return ciphertext;
 	} else {
 			/* Decrypt the ciphertext */
-		decryptedtext_len = decrypt(message, strlen(message), key, iv, decryptedtext);
+		decryptedtext_len = decrypt(tempMessage , strlen(textprocessed), key, iv, textprocessed);
 		
 
     			/* Add a NULL terminator to make the text printable */
     		/*decryptedtext[decryptedtext_len] = '\0';*/
 
-		return decryptedtext;
 	}
+
+	free(tempMessage);
 }
 
 
@@ -253,13 +255,19 @@ char* readStringAutomated(){
 
 	static char string[2000]="";
 
-	char inputSring[1920] = "abcdef ghijkl mnopqr";
+	char *inputString = (char *) calloc (1920, sizeof(char));
 
-	printf("\nString to be encrypted and send:\n%s", inputSring);
+	strcpy(inputString, "abcdef ghijkl mnopqr");
+
+	printf("\nString to be encrypted and send:\n%s", inputString);
 	
 	/* The string is encrypted */
-	strcpy(string, doEncryptionDecryption(inputSring, 1));
+	doEncryptionDecryption(inputString, 1);
+
+	strcpy(string, inputString);
 	printf("\nString encrypted:%s\n", string);
+
+	free(inputString);
 	
 	return string;
 }
@@ -275,7 +283,8 @@ char* readString(){
 	fgets(inputSring, 1920, stdin);
 	
 	/* The string is encrypted */
-	strcpy(string, doEncryptionDecryption(inputSring, 1));
+	strcpy(string, inputSring);
+	doEncryptionDecryption(string, 1);
 	printf("\nString encrypted:\n %s and has the lenght =%d", string, strlen(string));
 	
 	return string;
@@ -446,7 +455,7 @@ inputMatrixes defineMatrixesAutomated() {
 		}
 
 
-		strcat(matrixB, "#");
+		strcat(matrixB, "#\0");
 
 	}
 
@@ -490,7 +499,7 @@ inputMatrixes defineMatrixes() {
 			strcat(matrixA, "+");
 			buffer[0] = '\0';
 		}
-		strcat(matrixA, "#");
+		strcat(matrixA, "#\0");
 		printf("\n");
 	}
 	
@@ -506,7 +515,7 @@ inputMatrixes defineMatrixes() {
 			strcat(matrixB, "+");
 			buffer[0] = '\0';
 		}
-		strcat(matrixB, "#");
+		strcat(matrixB, "#\0");
 		printf("\n");
 	}
 	
@@ -553,7 +562,7 @@ assignment3_1(char *host)
 	} while ((option != 1) && (option != 2));
 	getchar();
 
-
+	
 	result_1 = get_date_and_time_1((void*)&get_date_and_time_1_arg, clnt);
 	if (result_1 == (serverResponse *) NULL) {
 		clnt_perror (clnt, "call failed");
@@ -605,15 +614,19 @@ assignment3_1(char *host)
 	} else {
 		reverse_encryption_1_arg.responseContent = readString();
 	}
+	printf("\nreverse_encryption_1_arg.responseContent = %s", reverse_encryption_1_arg.responseContent);
 	result_5 = reverse_encryption_1(&reverse_encryption_1_arg, clnt);
-	char decryptedMessage[2000]="";
+	char *decryptedMessage = (char *) calloc (2000, sizeof(char));
 	printf("\nMessage received before decryption = \n%s", result_5->responseContent);
-	strcpy(decryptedMessage, doEncryptionDecryption(result_5->responseContent, 2));
+	strcpy(decryptedMessage, result_5->responseContent);
+	doEncryptionDecryption(decryptedMessage, 2);
 	if (result_5 == (serverResponse *) NULL) {
 		clnt_perror (clnt, "call failed");
 	} else {
 		printf("\nThe reversed decrypted string received is:\n  %sn", decryptedMessage);
 	}
+
+	free(decryptedMessage);
 
 #ifndef	DEBUG
 	clnt_destroy (clnt);
